@@ -1,0 +1,137 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MCP Everything – recorder</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #f1f3fb;
+    --ink: #1a2140;
+    --quiet: #586184;
+    --line: #cfd5ea;
+    --signal: #3346d9;
+    --page: #7f8cdc;
+    --live: #d92c49;
+    --on-signal: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #171b30;
+      --ink: #e9ecf8;
+      --quiet: #9ca5c7;
+      --line: #333b5e;
+      --signal: #93a1ff;
+      --page: #5766b8;
+      --live: #ff7088;
+      --on-signal: #171b30;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    width: 288px;
+    margin: 0;
+    padding: 16px;
+    background: var(--paper);
+    color: var(--ink);
+    font: 13px/1.45 ui-rounded, system-ui, sans-serif;
+  }
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  #dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  body.recording #dot { background: var(--live); animation: live 1.6s ease-in-out infinite; }
+  @keyframes live { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { body.recording #dot { animation: none; } }
+
+  #trace {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 44px;
+    margin: 14px 0 12px;
+    border-bottom: 2px solid var(--line);
+  }
+  #trace i { flex: none; width: 4px; background: var(--line); }
+  #trace i.file { height: 6px; }
+  #trace i.page { height: 20px; background: var(--page); }
+  #trace i.action { height: 40px; background: var(--signal); }
+
+  p { margin: 0; color: var(--quiet); }
+  #status strong { color: var(--ink); font-size: 19px; font-variant-numeric: tabular-nums; }
+  ul { list-style: none; margin: 10px 0 0; padding: 0; }
+  li { padding: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  button {
+    width: 100%;
+    margin-top: 14px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--signal);
+    color: var(--on-signal);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  body.recording #action { background: var(--live); color: var(--on-signal); }
+  button:hover { filter: brightness(1.08); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  button.secondary { margin-top: 8px; background: transparent; color: var(--signal); box-shadow: inset 0 0 0 1px var(--line); }
+  button.quiet {
+    width: auto; margin: 0; padding: 0; background: none; color: var(--quiet);
+    font-weight: 500; text-decoration: underline; text-underline-offset: 2px;
+  }
+  [hidden] { display: none; }
+
+  #known { margin-top: 6px; }
+  #known strong { color: var(--ink); }
+  #extraction { margin-top: 12px; padding: 10px 12px; border-radius: 7px; background: color-mix(in srgb, var(--signal) 10%, transparent); }
+  #extraction.failed { background: color-mix(in srgb, var(--live) 12%, transparent); }
+  #extraction p { color: var(--ink); }
+  #extraction p + p { margin-top: 6px; }
+  #extraction.running p:first-child::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%;
+    background: var(--signal); vertical-align: 1px; animation: live 1.2s ease-in-out infinite;
+  }
+  #extraction.running p + p { color: var(--quiet); font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { #extraction.running p:first-child::before { animation: none; } }
+  #extraction ul { margin-top: 4px; }
+  #extraction li { color: var(--quiet); font-family: ui-monospace, monospace; font-size: 12px; }
+  #update { margin-bottom: 12px; padding: 10px 12px; border-radius: 7px; background: color-mix(in srgb, var(--live) 12%, transparent); }
+  #update p { color: var(--ink); }
+  #update button { margin-top: 8px; }
+  footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px;
+           padding-top: 10px; border-top: 1px solid var(--line); color: var(--quiet); font-size: 12px; }
+  #server-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  form { margin-top: 10px; }
+  label { display: block; margin: 8px 0 4px; font-weight: 650; }
+  input {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px;
+    background: transparent; color: var(--ink); font: inherit;
+  }
+</style>
+<section id="update" role="alert" hidden><p id="update-text"></p><button id="reload" type="button">Open extensions</button></section>
+<h1><span id="dot"></span><span id="site">MCP Everything – recorder</span></h1>
+<div id="trace" aria-hidden="true"></div>
+<p id="status"></p>
+<p id="known" hidden></p>
+<ul id="recent" aria-label="Latest actions"></ul>
+<button id="action" hidden></button>
+<button id="link" class="secondary" hidden>Link session</button>
+<section id="extraction" hidden aria-live="polite"></section>
+<form id="settings" hidden>
+  <label for="url">Server</label>
+  <input id="url" type="url" required placeholder="https://connector.example.com" autocomplete="url">
+  <label for="token">Token</label>
+  <input id="token" type="password" required placeholder="usc_…" autocomplete="off">
+  <button type="submit">Connect</button>
+</form>
+<footer><span id="server-name">No server</span><button id="server-toggle" class="quiet" type="button">Set up</button></footer>
+<script src="summary.js"></script>
+<script src="popup.js"></script>

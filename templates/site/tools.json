@@ -1,0 +1,63 @@
+{
+  "site": "example.invalid",
+  "base": "https://example.invalid",
+  "runtime": "http",
+  "auth": {"type": "session"},
+  "tools": [
+    {
+      "name": "search",
+      "description": "Zoek items op tekst.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"text": {"type": "string", "description": "Zoektekst."}}, "required": ["text"], "additionalProperties": false},
+      "output_schema": [{"id": "str", "name": "str"}],
+      "request": {"method": "GET", "path": "/api/search", "query": {"q": "{text}"}},
+      "response": {"path": "items", "fields": {"id": "id", "name": "name"}},
+      "depends_on": [],
+      "verifier": "Een bekende zoekterm geeft dat item terug.",
+      "evidence": "bundle",
+      "notes": "Vervang dit voorbeeld door wat de opname laat zien."
+    },
+    {
+      "name": "add_item",
+      "description": "Zet een item in de lijst. Omkeerbaar met remove_item.",
+      "effect": "write",
+      "reversible": "remove_item",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"item_id": {"type": "string"}}, "required": ["item_id"], "additionalProperties": false},
+      "output_schema": {"id": "str"},
+      "request": {"method": "POST", "path": "/api/list", "json": {"id": "{item_id}"}},
+      "depends_on": ["search"],
+      "verifier": {"path": "id"},
+      "evidence": "bundle",
+      "notes": ""
+    },
+    {
+      "name": "remove_item",
+      "description": "Haal een item uit de lijst.",
+      "effect": "write",
+      "reversible": "add_item",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"item_id": {"type": "string"}}, "required": ["item_id"], "additionalProperties": false},
+      "output_schema": {"removed": "bool"},
+      "request": {"method": "DELETE", "path": "/api/list/{item_id}"},
+      "depends_on": ["add_item"],
+      "verifier": {"path": "removed"},
+      "evidence": "bundle",
+      "notes": ""
+    },
+    {
+      "name": "get_list",
+      "description": "Lees de lijst.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {}, "additionalProperties": false},
+      "output_schema": {"items": [{"id": "str"}]},
+      "request": {"method": "GET", "path": "/api/list"},
+      "depends_on": [],
+      "verifier": "De lijst komt overeen met de site.",
+      "evidence": "bundle",
+      "notes": ""
+    }
+  ]
+}

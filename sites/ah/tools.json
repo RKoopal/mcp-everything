@@ -1,0 +1,42 @@
+{
+  "site": "ah.nl",
+  "base": "https://api.ah.nl",
+  "runtime": "http",
+  "headers": {"User-Agent": "Appie/9.28 (iPhone17,3; iPhone; CPU OS 26_1 like Mac OS X)", "x-client-name": "appie-ios", "x-client-version": "9.28", "x-application": "AHWEBSHOP", "Accept": "application/json"},
+  "auth": {
+    "type": "oauth",
+    "authorize_url": "https://login.ah.nl/secure/oauth/authorize?client_id=appie&redirect_uri=appie://login-exit&response_type=code",
+    "token": {"method": "POST", "path": "/mobile-auth/v1/auth/token", "json": {"clientId": "appie", "code": "{code}"}},
+    "refresh": {"method": "POST", "path": "/mobile-auth/v1/auth/token/refresh", "json": {"clientId": "appie", "refreshToken": "{refresh_token}"}}
+  },
+  "tools": [
+    {
+      "name": "receipts",
+      "description": "De kassabonnen van de gebruiker, nieuwste eerst, als id en tijdstip. Haal details op met receipt.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"offset": {"type": "integer", "minimum": 0, "default": 0, "description": "Sla zoveel bonnen over, 0 voor de nieuwste."}, "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 20, "description": "Aantal bonnen; meer dan 20 geeft 504's."}}, "required": [], "additionalProperties": false},
+      "output_schema": [{"id": "str", "dateTime": "str"}],
+      "request": {"method": "POST", "path": "/graphql", "json": {"query": "query FetchPosReceipts($offset: Int!, $limit: Int!) { posReceiptsPage(pagination: {offset: $offset, limit: $limit}) { posReceipts { id dateTime } } }", "variables": {"offset": "{offset}", "limit": "{limit}"}}},
+      "response": {"path": "data.posReceiptsPage.posReceipts"},
+      "depends_on": [],
+      "verifier": "De bonnen komen overeen met de app.",
+      "evidence": "replayed",
+      "notes": "Draait elke vijf minuten in ah-wbw (app/ah/client.py). Via deze connector nog niet gedraaid. AH geeft regelmatig 503/504; lezen wordt herhaald."
+    },
+    {
+      "name": "receipt",
+      "description": "Eén kassabon: producten met aantal en prijs, kortingen, persoonlijke korting, zegels, totaal en winkel.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"id": {"type": "string", "description": "Id uit receipts."}}, "required": ["id"], "additionalProperties": false},
+      "output_schema": {"products": [{"quantity": "int", "name": "str", "price": {"amount": "float"}, "amount": {"amount": "float"}}], "discounts": [{"type": "str", "name": "str", "amount": {"amount": "float"}}], "total": {"amount": "float"}, "transaction": {"store": "str", "dateTime": "str"}},
+      "request": {"method": "POST", "path": "/graphql", "json": {"query": "query FetchReceipt($id: String!) { posReceiptDetails(id: $id) { products { quantity name weight { amount unit } price { amount } amount { amount } deposit { amount } indicators { name } } discounts { type name amount { amount } } discountPersonal { description amount { amount } } stamps { quantity amount { amount } } total { amount } transaction { store dateTime } } }", "variables": {"id": "{id}"}}},
+      "response": {"path": "data.posReceiptDetails"},
+      "depends_on": ["receipts"],
+      "verifier": "Het totaal komt overeen met de som van de regels en kortingen.",
+      "evidence": "replayed",
+      "notes": "Draait elke vijf minuten in ah-wbw (app/ah/client.py)."
+    }
+  ]
+}

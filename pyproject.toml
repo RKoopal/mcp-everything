@@ -1,0 +1,39 @@
+[project]
+name = "mcp-everything"
+version = "0.5.0"
+description = "Eén MCP-verbinding naar elke website: van een opname naar gedeelde tools."
+requires-python = ">=3.12"
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "anthropic>=2.4.0",
+    "anyio>=4.16.0",
+    "cryptography>=50.0.2",
+    "httpx2>=2.16.0",
+    "jsonschema>=4.26.0",
+    "mcp>=2.3.0",
+    "pydantic>=2.14.2",
+    "python-multipart>=0.0.33",
+    "starlette>=1.10.0",
+    "uvicorn>=0.54.0",
+    "websockets>=17.4",
+]
+
+[dependency-groups]
+dev = ["pytest>=9.2.0", "ruff>=0.17.3"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 130
+extend-exclude = ["sites/linkedin"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM"]
+ignore = ["S101", "S603", "S607", "SIM105"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S"]

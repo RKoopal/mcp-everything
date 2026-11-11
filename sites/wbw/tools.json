@@ -1,0 +1,116 @@
+{
+  "site": "wiebetaaltwat.nl",
+  "base": "https://app.wiebetaaltwat.nl",
+  "runtime": "http",
+  "headers": {"Accept": "application/json", "Accept-Version": "11", "Origin": "https://app.wiebetaaltwat.nl", "Referer": "https://app.wiebetaaltwat.nl/lists"},
+  "auth": {
+    "type": "password",
+    "fields": ["email", "password"],
+    "login": {"method": "POST", "path": "/api/users/sign_in", "json": {"user": {"email": "{email}", "password": "{password}"}}}
+  },
+  "tools": [
+    {
+      "name": "lists",
+      "description": "De WieBetaaltWat-lijsten van de gebruiker, laatst gewijzigde eerst.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {}, "additionalProperties": false},
+      "output_schema": [{"id": "str", "name": "str", "modified_at": "str"}],
+      "request": {"method": "GET", "path": "/api/lists", "query": {"per_page": "100"}},
+      "response": {"path": "data", "fields": {"id": "list.id", "name": "list.name", "modified_at": "list.modified_at"}},
+      "depends_on": [],
+      "verifier": "De lijsten komen overeen met de site.",
+      "evidence": "replayed",
+      "notes": "Draait dagelijks in ah-wbw (app/wbw.py). Via deze connector nog niet gedraaid."
+    },
+    {
+      "name": "current_user",
+      "description": "De ingelogde gebruiker. Vergelijk id met user_id van een lid om jezelf in een lijst te vinden.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {}, "additionalProperties": false},
+      "output_schema": {"id": "str"},
+      "request": {"method": "GET", "path": "/api/users/current"},
+      "response": {"path": "current_user", "fields": {"id": "id"}},
+      "depends_on": [],
+      "verifier": "Het id hoort bij de ingelogde gebruiker.",
+      "evidence": "replayed",
+      "notes": "Draait dagelijks in ah-wbw (app/wbw.py)."
+    },
+    {
+      "name": "members",
+      "description": "De leden van een lijst. Leden met archived of deleted_at doen niet meer mee.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"list_id": {"type": "string", "description": "Id uit lists."}}, "required": ["list_id"], "additionalProperties": false},
+      "output_schema": [{"id": "str", "nickname": "str", "full_name": "str", "user_id": "str", "archived": "bool", "deleted_at": "str"}],
+      "request": {"method": "GET", "path": "/api/lists/{list_id}/members", "query": {"per_page": "100"}},
+      "response": {"path": "data", "fields": {"id": "member.id", "nickname": "member.nickname", "full_name": "member.full_name", "user_id": "member.user_id", "archived": "member.archived", "deleted_at": "member.deleted_at"}},
+      "depends_on": ["lists"],
+      "verifier": "De leden komen overeen met de lijst op de site.",
+      "evidence": "replayed",
+      "notes": "Draait dagelijks in ah-wbw (app/wbw.py)."
+    },
+    {
+      "name": "balance",
+      "description": "Het saldo per lid van een lijst.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"list_id": {"type": "string", "description": "Id uit lists."}}, "required": ["list_id"], "additionalProperties": false},
+      "output_schema": {},
+      "request": {"method": "GET", "path": "/api/lists/{list_id}/balance"},
+      "response": {"path": "balance"},
+      "depends_on": ["lists"],
+      "verifier": "Het saldo komt overeen met de lijst op de site.",
+      "evidence": "replayed",
+      "notes": "Draait in het WBW-archief van ah-wbw (app/archive.py). De vorm van balance is daar niet vastgelegd."
+    },
+    {
+      "name": "expenses",
+      "description": "De uitgaven van een lijst, nieuwste eerst, 100 per pagina.",
+      "effect": "read",
+      "human_only": false,
+      "input_schema": {"type": "object", "properties": {"list_id": {"type": "string", "description": "Id uit lists."}, "page": {"type": "integer", "minimum": 1, "description": "Pagina, 1 voor de nieuwste."}}, "required": ["list_id", "page"], "additionalProperties": false},
+      "output_schema": {},
+      "request": {"method": "GET", "path": "/api/lists/{list_id}/expenses", "query": {"per_page": "100", "page": "{page}"}},
+      "response": {"path": "data"},
+      "depends_on": ["lists"],
+      "verifier": "De uitgaven komen overeen met de lijst op de site.",
+      "evidence": "replayed",
+      "notes": "Draait in het WBW-archief van ah-wbw (app/archive.py), daar met een filter op soort. Elk item is {\"expense\": {...}, \"permissions\": {...}}."
+    },
+    {
+      "name": "add_expense",
+      "description": "Zet een uitgave in een lijst. De bedragen per lid zijn samen precies amount_cents. Vraagt om bevestiging door de gebruiker.",
+      "effect": "write",
+      "reversible": null,
+      "human_only": true,
+      "input_schema": {
+        "type": "object",
+        "$defs": {"money": {"type": "object", "properties": {"fractional": {"type": "integer", "description": "Bedrag in centen."}, "currency": {"const": "EUR"}}, "required": ["fractional", "currency"], "additionalProperties": false}},
+        "properties": {
+          "list_id": {"type": "string", "description": "Id uit lists."},
+          "name": {"type": "string", "minLength": 1, "maxLength": 80, "description": "Omschrijving, bijvoorbeeld 'AH 3 november'."},
+          "amount_cents": {"type": "integer", "minimum": 1, "description": "Totaal in centen."},
+          "payed_by_id": {"type": "string", "description": "Lid-id (uit members) van wie betaalde."},
+          "payed_on": {"type": "string", "format": "date", "description": "Datum, JJJJ-MM-DD."},
+          "shares": {"type": "array", "minItems": 1, "description": "Per lid het deel. Gebruik meta {\"type\": \"factor\", \"multiplier\": 1} voor een gelijk deel.",
+                     "items": {"type": "object", "properties": {"member_id": {"type": "string"}, "meta": {"type": "object", "properties": {"type": {"const": "factor"}, "multiplier": {"type": "number", "exclusiveMinimum": 0}}, "required": ["type", "multiplier"], "additionalProperties": false}, "amount": {"$ref": "#/$defs/money"}, "source_amount": {"$ref": "#/$defs/money"}}, "required": ["member_id", "meta", "amount", "source_amount"], "additionalProperties": false}}
+        },
+        "required": ["list_id", "name", "amount_cents", "payed_by_id", "payed_on", "shares"],
+        "additionalProperties": false
+      },
+      "output_schema": {"id": "str", "name": "str"},
+      "request": {"method": "POST", "path": "/api/lists/{list_id}/expenses",
+                  "json": {"expense": {"id": "{$uuid}", "list_id": "{list_id}", "name": "{name}", "exchange_rate": 1, "category": {"id": 999999999, "category_source": "auto"},
+                                       "payed_by_id": "{payed_by_id}", "payed_on": "{payed_on}",
+                                       "amount": {"fractional": "{amount_cents}", "currency": "EUR"}, "source_amount": {"fractional": "{amount_cents}", "currency": "EUR"},
+                                       "shares_attributes": "{shares}"}}},
+      "response": {"path": "expense", "fields": {"id": "id", "name": "name"}},
+      "depends_on": ["lists", "members"],
+      "verifier": {"path": "expense.id"},
+      "evidence": "replayed",
+      "notes": "Alleen shares_attributes werkt; andere vormen geven 400 (ah-wbw). Verwijderen is niet opgenomen, dus dit is human_only: de connector vraagt de gebruiker om bevestiging. Neem verwijderen op om dit omkeerbaar te maken. ah-wbw controleert ook dat WBW de verdeling overnam; dat kan dit format nog niet."
+    }
+  ]
+}

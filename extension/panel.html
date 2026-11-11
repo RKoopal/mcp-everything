@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Connector</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 13px system-ui, sans-serif; margin: 16px; max-width: 420px; }
+  label { display: block; margin: 12px 0; }
+  input { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 4px; }
+  button { margin-right: 8px; padding: 4px 12px; }
+  p { margin: 0 0 8px; }
+</style>
+<p><strong id="count">0 requests</strong></p>
+<p>Records while DevTools is open, with the responses. The server makes tools from it.</p>
+<label>Only this domain <input id="host" placeholder="empty means all domains"></label>
+<button id="extract">Make tools</button>
+<button id="clear">Clear</button>
+<p id="result" role="status"></p>
+<script src="summary.js"></script>
+<script src="panel.js"></script>

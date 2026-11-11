@@ -1,0 +1,35 @@
+# Locally: docker compose up -d --build, then http://127.0.0.1:8000/healthz.
+name: mcp-everything
+
+services:
+  connector:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      BROWSER_URL: http://browser:9222
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [default, browser]
+    depends_on: [browser]
+
+  # The browser runtime. Only the connector can reach it: DevTools has no login.
+  browser:
+    image: chromedp/headless-shell:156.0.8078.48
+    restart: unless-stopped
+    networks: [browser]
+    read_only: true
+    tmpfs: [/tmp]
+    shm_size: 256m
+    mem_limit: 768m
+    pids_limit: 512
+    security_opt: [no-new-privileges:true]
+
+networks:
+  browser:

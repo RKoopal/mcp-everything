@@ -1,0 +1,11 @@
+# Alleen wat de server nodig heeft. Opnames, sessies en .env komen nooit in een image.
+*
+!pyproject.toml
+!uv.lock
+!connector/*.py
+!sites/*/tools.json
+# De extensie: de server biedt hem aan als /extension.zip.
+!extension/*.js
+!extension/*.json
+!extension/*.html
+!extension/*.md

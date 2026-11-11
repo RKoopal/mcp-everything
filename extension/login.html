@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Log in – MCP Everything</title>
+<style>
+  :root { color-scheme: light dark; --ink: #1a2140; --quiet: #586184; --signal: #3346d9; --live: #d92c49; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e9ecf8; --quiet: #9ca5c7; --signal: #7f8cdc; --live: #ff6b81; } }
+  body { max-width: 420px; margin: 15vh auto; padding: 0 16px; color: var(--ink);
+         font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size: 22px; line-height: 1.25; }
+  p { color: var(--quiet); }
+  button { width: 100%; font: inherit; font-weight: 600; padding: 11px 14px; border: 0; border-radius: 8px;
+           background: var(--signal); color: #fff; cursor: pointer; }
+  .error { color: var(--live); }
+</style>
+<main>
+  <h1>Log in to <span class="host">the site</span></h1>
+  <p>After you log in, <span class="host">the site</span> sends you to an address that Chrome cannot open. The
+    extension reads that address and gives it to your link page, so you do not have to copy it. For that it needs
+    access to <span class="host">the site</span>.</p>
+  <button id="allow" type="button">Allow and log in</button>
+  <p id="failed" class="error" role="alert" hidden></p>
+</main>
+<script src="summary.js"></script>
+<script src="login.js"></script>

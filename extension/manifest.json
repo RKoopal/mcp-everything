@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "MCP Everything – recorder",
+  "version": "0.9.2",
+  "description": "Records a site you choose. The connector server makes tools from it, and links your session when you ask.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5gvCAFcYCZT3jzs41TdhbXlyCeVoiT/6+JESF7I6xUPSW24GsABB8EmH5Xy6s7ZK8xXUp0hpO9PJkP1EPNaSlm/Q+8tHD0a7esoPI+e6YkFu6oeZVmqGUdJGfPw/JhQyGlkg1fSklXKuKL/so9/7KmW09W6RIjOgHEAl8pZT0frbiTS3arv4Hk1QV6wmMjucH0aPRELaATabddJhfdALf6AEzPDeAV8pupQ9x/WkZH8juV8cnPqvYdyh5oUzr0gdDMFuO7OS0w5VErFMOM9k/dSMGugioGRwc8ssgg+tbQP99wDpVNAY7X77NrpW/kC5TrWnAL56OYyCfTlFgPxMFwIDAQAB",
+  "permissions": ["webRequest", "storage", "activeTab", "cookies", "scripting"],
+  "optional_host_permissions": ["<all_urls>"],
+  "externally_connectable": { "matches": ["https://mcp-everything.com/*"] },
+  "action": { "default_title": "MCP Everything – recorder", "default_popup": "popup.html" },
+  "background": { "service_worker": "background.js" },
+  "devtools_page": "devtools.html"
+}

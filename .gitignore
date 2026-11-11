@@ -1,0 +1,14 @@
+recordings/
+*.values.json
+*.har
+.env
+.env.*
+!.env.example
+__pycache__/
+.venv/
+.pytest_cache/
+.DS_Store
+/data/
+
+# Notities van besprekingen, met transcript: niet in git
+docs/*.docx
